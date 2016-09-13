@@ -15,30 +15,33 @@
  */
 package com.example.android.quakereport;
 
-import android.annotation.SuppressLint;
+import android.app.LoaderManager;
+import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Intent;
+import android.content.Loader;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.List;
 
-public class EarthquakeActivity extends AppCompatActivity {
+public class EarthquakeActivity extends AppCompatActivity implements LoaderCallbacks<List<EarthquakeItem>> {
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
 
     ArrayList<EarthquakeItem> earthquakes = null;
     ListView earthquakeListView;
+    TextView emptyView;
 
     // Create a new {@link ArrayAdapter} of earthquakes
     EarthquakeAdapter adapter;
+
+    String url = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=4&limit=100";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +50,7 @@ public class EarthquakeActivity extends AppCompatActivity {
 
         // Find a reference to the {@link ListView} in the layout
         earthquakeListView = (ListView) findViewById(R.id.list);
+        emptyView = (TextView) findViewById(R.id.empty_view);
 
         earthquakes = new ArrayList<>();
 
@@ -55,6 +59,7 @@ public class EarthquakeActivity extends AppCompatActivity {
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
         earthquakeListView.setAdapter(adapter);
+        earthquakeListView.setEmptyView(emptyView);
 
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -69,35 +74,29 @@ public class EarthquakeActivity extends AppCompatActivity {
             }
         });
 
-        EarthQuakeAsync async = new EarthQuakeAsync();
-        async.execute();
+        LoaderManager loaderManager = getLoaderManager();
+
+        loaderManager.initLoader(1, null, this);
     }
 
-    private void getData() {
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String url = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=" +
-                sdf.format(Calendar.getInstance().getTimeInMillis() - 999999999 - 999999999 - 799999999) +
-                "&endtime=" +
-                sdf.format(Calendar.getInstance().getTimeInMillis() + 100000000) +
-                "&limit=1000&minfelt=50";
-        Log.e(LOG_TAG, url);
-        QueryUtils.fetchEarthquakeData(url);
+
+    @Override
+    public Loader<List<EarthquakeItem>> onCreateLoader(int i, Bundle bundle) {
+        emptyView.setText(R.string.loading);
+        return new EarthquakeLoader(this, url);
     }
 
-    private class EarthQuakeAsync extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            getData();
-            return null;
+    @Override
+    public void onLoadFinished(Loader<List<EarthquakeItem>> loader, List<EarthquakeItem> earthquakeItems) {
+        adapter.clear();
+        if (earthquakeItems != null && !earthquakeItems.isEmpty()) {
+            adapter.addAll(earthquakeItems);
         }
+        emptyView.setText(R.string.no_earthquake_data);
+    }
 
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            earthquakes.clear();
-            earthquakes.addAll(QueryUtils.extractEarthquakes());
-            adapter.notifyDataSetChanged();
-            super.onPostExecute(aVoid);
-        }
+    @Override
+    public void onLoaderReset(Loader<List<EarthquakeItem>> loader) {
+        adapter.clear();
     }
 }

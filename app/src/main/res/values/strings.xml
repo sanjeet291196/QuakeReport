@@ -14,4 +14,6 @@
 -->
 <resources>
     <string name="app_name">Quake Report</string>
+    <string name="loading">Loading...</string>
+    <string name="no_earthquake_data">No Earthquake Data.</string>
 </resources>

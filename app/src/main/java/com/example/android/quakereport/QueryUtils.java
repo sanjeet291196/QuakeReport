@@ -15,6 +15,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by sanjit on 5/9/16.
@@ -35,12 +36,22 @@ public final class QueryUtils {
     private QueryUtils() {
     }
 
-    /**
-     * Return a list of {@link EarthquakeItem} objects that has been built up from
-     * parsing a JSON response.
-     */
-    public static ArrayList<EarthquakeItem> extractEarthquakes() {
 
+    public static List<EarthquakeItem> fetchEarthquakeData(String requestUrl) {
+        URL url = null;
+        try {
+            url = new URL(requestUrl);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        JSON_RESPONSE = "";
+
+        try {
+            JSON_RESPONSE = makeHTTPRequest(url);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // Create an empty ArrayList that we can start adding earthquakes to
         ArrayList<EarthquakeItem> earthquakes = new ArrayList<>();
@@ -58,8 +69,8 @@ public final class QueryUtils {
                     double magnitude = properties.getDouble("mag");
                     String place = properties.getString("place");
                     long time = properties.getLong("time");
-                    String url = properties.getString("url");
-                    earthquakes.add(new EarthquakeItem(magnitude, place, time, url));
+                    String page_url = properties.getString("url");
+                    earthquakes.add(new EarthquakeItem(magnitude, place, time, page_url));
                 }
 
             } catch (JSONException e) {
@@ -72,23 +83,6 @@ public final class QueryUtils {
 
         // Return the list of earthquakes
         return earthquakes;
-    }
-
-    public static void fetchEarthquakeData(String requestUrl) {
-        URL url = null;
-        try {
-            url = new URL(requestUrl);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-
-        JSON_RESPONSE = "";
-
-        try {
-            JSON_RESPONSE = makeHTTPRequest(url);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private static String makeHTTPRequest(URL url) throws IOException {
